@@ -16,12 +16,13 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🌡️ 미녕예보 AI Pro v3.0")
+st.title("🌡️ 미녕예보 AI Pro v3.1")
 st.subheader("Stacking Ensemble 기반 정밀 기온 예측 시스템")
 
 # 1. 모델 로드
 @st.cache_resource
 def load_minyoung_model():
+    # 업로드하신 pkl 파일 이름과 정확히 일치해야 합니다.
     return joblib.load('minyoung_stack_model.pkl')
 
 try:
@@ -32,53 +33,44 @@ except Exception as e:
 
 # 2. 날씨 데이터 수집 및 예측 함수
 def fetch_and_predict():
-    API_KEY = st.secrets["WEATHER_KEY"] # Streamlit Cloud의 Secrets에 넣어야 합니다.
+    if "WEATHER_KEY" not in st.secrets:
+        st.error("❌ Secrets에 'WEATHER_KEY'가 설정되지 않았습니다.")
+        return pd.DataFrame()
+
+    API_KEY = st.secrets["WEATHER_KEY"]
     url = "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst"
     
     seoul_tz = pytz.timezone('Asia/Seoul')
-    base_date = datetime.now(seoul_tz).strftime("%Y%m%d")
+    now = datetime.now(seoul_tz)
+    
+    # 기상청 단기예보는 0500시 데이터가 가장 안정적입니다.
+    base_date = now.strftime("%Y%m%d")
+    base_time = "0500"
     
     params = {
         'serviceKey': API_KEY,
-        'dataType': 'JSON', 'base_date': base_date, 'base_time': '0500', 
-        'nx': '55', 'ny': '127', 'numOfRows': 500 
+        'dataType': 'JSON', 
+        'base_date': base_date, 
+        'base_time': base_time, 
+        'nx': '55', 'ny': '127', 
+        'numOfRows': 500 
     }
     
-    res = requests.get(url, params=params).json()
-    items = res['response']['body']['items']['item']
-    
-    data = {}
-    for item in items:
-        t = item['fcstTime']
-        if t not in data: data[t] = {}
-        if item['category'] == 'TMP': data[t]['TMP'] = float(item['fcstValue'])
-        if item['category'] == 'REH': data[t]['REH'] = float(item['fcstValue'])
-        if item['category'] == 'WSD': data[t]['WSD'] = float(item['fcstValue'])
-
-    # 데이터프레임 변환 및 예측
-    df = pd.DataFrame(data).T.dropna()
-    df.columns = ['TMP', 'REH', 'WSD'] # 모델 학습 시 컬럼명과 맞춰야 함
-    
-    # 미녕 모델로 진짜 예측 실행! (수식이 아니라 모델이 직접 계산)
-    df['PRED'] = model.predict(df[['TMP', 'REH', 'WSD']]) 
-    return df
-
-# 3. 메인 화면 구성
-if st.button('실시간 예측 업데이트'):
-    with st.spinner('미녕 AI가 복합 모델을 분석 중입니다...'):
-        forecast_df = fetch_and_predict()
+    try:
+        response = requests.get(url, params=params)
+        res = response.json()
         
-        # 최신 예보 메트릭
-        current_pred = forecast_df['PRED'].iloc[0]
-        st.metric(label="현재 시점 정밀 예측 기온", value=f"{current_pred:.2f} °C", delta=f"{current_pred - forecast_df['TMP'].iloc[0]:.2f} (AI 보정치)")
-        
-        # 그래프 표시
-        st.write("### 📈 시간대별 기온 변화 (AI 예측)")
-        st.line_chart(forecast_df[['TMP', 'PRED']])
-        
-        # 상세 데이터 표
-        with st.expander("상세 분석 데이터 보기"):
-            st.dataframe(forecast_df.style.highlight_max(axis=0))
-
-else:
-    st.info("위 버튼을 눌러 실시간 앙상블 분석을 시작하세요.")
+        # [중요] 기상청 응답 구조 확인 (KeyError: 'item' 방어)
+        if 'response' in res and 'body' in res['response'] and 'items' in res['response']['body']:
+            items = res['response']['body']['items']['item']
+        else:
+            # 에러 원인 분석 및 출력
+            header = res.get('response', {}).get('header', {})
+            error_msg = header.get('resultMsg', '데이터를 찾을 수 없음')
+            error_code = header.get('resultCode', 'Unknown')
+            
+            st.warning(f"⚠️ 기상청 API 응답 확인: {error_msg} (코드: {error_code})")
+            if error_code == '03':
+                st.info("💡 공공데이터포털에서 API 키가 아직 승인/활성화되지 않았을 수 있습니다. (최대 2시간 소요)")
+            elif error_code == '30':
+                st.info("💡 서비스 키 등록 오류입니다. Secrets의 키가 올바른지 다시
