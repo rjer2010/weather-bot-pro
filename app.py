@@ -118,7 +118,7 @@ if st.button('🚀 레전드 스태킹 분석 시작'):
             curr_tmp = forecast_df['TMP'].iloc[0]
             
             c1, c2, c3 = st.columns(3)
-            c1.metric("미녕 AI 예측", f"{curr_pred:.2f} °C")
+            c1.metric("AI 예측", f"{curr_pred:.2f} °C")
             c2.metric("기상청 원본", f"{curr_tmp:.1f} °C")
             c3.metric("AI 보정치", f"{curr_pred-curr_tmp:.2f} °C")
             
