@@ -6,9 +6,9 @@ import pytz
 from datetime import datetime, timedelta
 
 # 1. 페이지 설정
-st.set_page_config(page_title="미녕예보 AI Pro", page_icon="🌤️", layout="wide")
+st.set_page_config(page_title="일기예보 AI Pro", page_icon="🌤️", layout="wide")
 
-st.title("🌡️ 미녕예보 AI Pro v3.5")
+st.title("🌡️ 일기예보 AI Pro v3.5")
 st.subheader("Legendary Stacking Ensemble (XGB, LGBM, LSTM, RF, Prophet)")
 
 # 2. 미녕님의 Ridge 스태킹 모델 수식 직접 구현 (pkl 에러 방지용)
@@ -109,11 +109,11 @@ def fetch_and_predict():
 
 # 4. 메인 화면 구성
 if st.button('🚀 레전드 스태킹 분석 시작'):
-    with st.spinner('미녕 AI가 기상청 원본 데이터를 정제하고 앙상블 분석 중입니다...'):
+    with st.spinner('AI가 기상청 원본 데이터를 정제하고 앙상블 분석 중입니다...'):
         forecast_df = fetch_and_predict()
         
         if not forecast_df.empty:
-            st.success("✅ 분석 성공! 미녕님의 스태킹 모델이 결과를 산출했습니다.")
+            st.success("✅ 분석 성공! 스태킹 모델이 결과를 산출했습니다.")
             curr_pred = forecast_df['PRED'].iloc[0]
             curr_tmp = forecast_df['TMP'].iloc[0]
             
@@ -130,4 +130,4 @@ if st.button('🚀 레전드 스태킹 분석 시작'):
         else:
             st.info("현재 기상청 API로부터 데이터를 가져올 수 없습니다. 30분 후 다시 시도해 주세요.")
 else:
-    st.info("버튼을 눌러 7시간의 결과물, 레전드 스태킹 모델을 확인하세요!")
+    st.info("버튼을 눌러 스태킹 모델을 확인하세요!")
