@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 st.set_page_config(page_title="일기예보 AI Pro", page_icon="🌤️", layout="wide")
 
 st.title("🌡️ 일기예보 AI Pro v3.5")
-st.subheader("Legendary Stacking Ensemble (XGB, LGBM, LSTM, RF, Prophet)")
+st.subheader("Stacking Ensemble (XGB, LGBM, LSTM, RF, Prophet)")
 
 # 2. 미녕님의 Ridge 스태킹 모델 수식 직접 구현 (pkl 에러 방지용)
 # 노트북 분석 결과: Ridge(alpha=1.0)의 가중치와 절편을 시뮬레이션합니다.
